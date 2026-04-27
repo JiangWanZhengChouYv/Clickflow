@@ -31,21 +31,34 @@ create_icon() {
 
 install_deps() {
     echo "[3/6] 检查并安装依赖..."
-    if [ ! -d "venv" ]; then
-        echo "创建虚拟环境..."
-        python3 -m venv venv
+    # 在CI环境中直接使用系统Python
+    if [ -n "$CI" ]; then
+        echo "在CI环境中安装依赖..."
+        pip install -q -U pip
+        pip install -q -r requirements.txt
+    else
+        # 在本地环境使用虚拟环境
+        if [ ! -d "venv" ]; then
+            echo "创建虚拟环境..."
+            python3 -m venv venv
+        fi
+        source venv/bin/activate
+        pip install -q -U pip
+        pip install -q -r requirements.txt
     fi
-    source venv/bin/activate
-    pip install -q -U pip
-    pip install -q -r requirements.txt
     echo "✅ 依赖安装完成"
     echo ""
 }
 
 build_app() {
     echo "[4/6] 构建 .app 应用包..."
-    source venv/bin/activate
-    pyinstaller --clean mouse_clicker.spec
+    # 在CI环境中直接使用系统Python
+    if [ -n "$CI" ]; then
+        pyinstaller --clean mouse_clicker.spec
+    else
+        source venv/bin/activate
+        pyinstaller --clean mouse_clicker.spec
+    fi
     echo "✅ .app 应用包构建完成"
     echo ""
 }

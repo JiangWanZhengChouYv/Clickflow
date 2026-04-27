@@ -1,0 +1,40 @@
+name: Build and Package DMG
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: macos-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+        # 安装 create-dmg 工具
+        brew install create-dmg
+    
+    - name: Create icon
+      run: python create_icon.py
+    
+    - name: Build app and DMG
+      run: bash build.sh --dmg
+    
+    - name: Upload DMG artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Clickflow-1.0.0--dmg
+        path: dist/*.dmg
+        retention-days: 30
