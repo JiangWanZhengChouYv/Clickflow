@@ -3,7 +3,7 @@
 
 set -e
 
-APP_NAME="macOS 鼠标连点器"
+APP_NAME="Clickflow"
 VERSION="1.0.0"
 BUILD_DIR="build"
 DIST_DIR="dist"

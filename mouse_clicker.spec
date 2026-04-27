@@ -1,10 +1,19 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+import os
+
 block_cipher = None
 
+# 获取当前目录
+current_dir = os.path.dirname(os.path.abspath(SPEC))
+
+# 检查图标文件是否存在
+icon_path = os.path.join(current_dir, 'assets', 'icon.icns')
+if not os.path.exists(icon_path):
+    icon_path = None
 
 a = Analysis(['src/main.py'],
-             pathex=['/Users/markzhang/Desktop/GithubClone/Clickflow'],
+             pathex=[current_dir],
              binaries=[],
              datas=[],
              hiddenimports=[],
@@ -27,7 +36,7 @@ exe = EXE(pyz,
           a.zipfiles,
           a.datas,
           [],
-          name='macOS 鼠标连点器',
+          name='Clickflow',
           debug=False,
           bootloader_ignore_signals=False,
           strip=False,
@@ -41,12 +50,12 @@ exe = EXE(pyz,
           entitlements_file=None)
 
 app = BUNDLE(exe,
-             name='macOS 鼠标连点器.app',
-             icon='assets/icon.icns',
+             name='Clickflow.app',
+             icon=icon_path,
              bundle_identifier=None,
              info_plist={
-                 'CFBundleName': 'macOS 鼠标连点器',
-                 'CFBundleDisplayName': 'macOS 鼠标连点器',
+                 'CFBundleName': 'Clickflow',
+                 'CFBundleDisplayName': 'Clickflow',
                  'CFBundleVersion': '1.0.0',
                  'CFBundleShortVersionString': '1.0.0',
                  'NSHumanReadableCopyright': 'Copyright © 2026, All Rights Reserved'
