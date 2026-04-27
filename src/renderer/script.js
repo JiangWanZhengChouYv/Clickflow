@@ -51,6 +51,13 @@ function initEventListeners() {
   elements.deletePointButton.addEventListener('click', deletePoint);
   elements.clearPointsButton.addEventListener('click', clearPoints);
   
+  // 模式切换
+  elements.modeSingle.addEventListener('change', handleModeChange);
+  elements.modeMulti.addEventListener('change', handleModeChange);
+  
+  // 无限循环复选框
+  elements.infiniteCheckbox.addEventListener('change', handleInfiniteChange);
+  
   // 控制按钮
   elements.startButton.addEventListener('click', startClick);
   elements.pauseButton.addEventListener('click', togglePause);
@@ -94,10 +101,43 @@ async function pickCoordinate() {
   }
 }
 
+// 模式切换处理
+function handleModeChange() {
+  const isMultiMode = elements.modeMulti.checked;
+  
+  if (!isMultiMode && points.length > 1) {
+    if (confirm('单点模式下只允许1个点位，是否清空多余的点位？')) {
+      points = [points[0]];
+      updatePointList();
+    } else {
+      elements.modeMulti.checked = true;
+      elements.modeSingle.checked = false;
+    }
+  }
+  
+  updatePointButtons();
+}
+
+// 无限循环处理
+function handleInfiniteChange() {
+  elements.clickCountInput.disabled = elements.infiniteCheckbox.checked;
+}
+
+// 更新点位按钮状态
+function updatePointButtons() {
+  const isMultiMode = elements.modeMulti.checked;
+  const canAdd = isMultiMode ? points.length < 3 : points.length < 1;
+  
+  elements.addPointButton.disabled = !canAdd;
+}
+
 // 添加点位
 function addPoint() {
-  if (points.length >= 3) {
-    alert('最多只能添加3个点位');
+  const isMultiMode = elements.modeMulti.checked;
+  const maxPoints = isMultiMode ? 3 : 1;
+  
+  if (points.length >= maxPoints) {
+    alert(isMultiMode ? '最多只能添加3个点位' : '单点模式下只能添加1个点位');
     return;
   }
   
@@ -106,6 +146,7 @@ function addPoint() {
   
   points.push({ x, y });
   updatePointList();
+  updatePointButtons();
 }
 
 // 编辑点位
@@ -134,12 +175,14 @@ function deletePoint() {
   
   points.splice(selectedIndex, 1);
   updatePointList();
+  updatePointButtons();
 }
 
 // 清空点位
 function clearPoints() {
   points = [];
   updatePointList();
+  updatePointButtons();
 }
 
 // 更新点位列表
@@ -287,6 +330,8 @@ function initApp() {
   updateStatus('就绪');
   updateControlButtons(false);
   updatePointList();
+  updatePointButtons();
+  handleInfiniteChange(); // 初始化无限循环状态
 }
 
 // 启动应用

@@ -1,5 +1,7 @@
 const { app, BrowserWindow, ipcMain } = require('electron')
 const path = require('path')
+const { spawn } = require('child_process')
+const fs = require('fs')
 
 // 确保应用是单实例运行
 const gotTheLock = app.requestSingleInstanceLock()
@@ -63,9 +65,29 @@ ipcMain.on('mouse-click', (event, data) => {
   let count = 0
   let currentPointIndex = 0
   let running = true
+  const pythonScriptPath = path.join(__dirname, 'src', 'electron_mouse_controller.py')
   
-  // 模拟点击循环（实际项目中需要使用系统API实现）
-  const clickInterval = setInterval(() => {
+  // 执行鼠标点击
+  const performClick = (targetX, targetY, targetButton) => {
+    return new Promise((resolve, reject) => {
+      const pythonProcess = spawn('python3', [pythonScriptPath, 'click', targetX.toString(), targetY.toString(), targetButton])
+      
+      pythonProcess.on('close', (code) => {
+        if (code === 0) {
+          resolve()
+        } else {
+          reject(new Error(`Python script exited with code ${code}`))
+        }
+      })
+      
+      pythonProcess.on('error', (err) => {
+        reject(err)
+      })
+    })
+  }
+  
+  // 点击循环
+  const clickInterval = setInterval(async () => {
     if (!running) {
       clearInterval(clickInterval)
       return
@@ -82,6 +104,7 @@ ipcMain.on('mouse-click', (event, data) => {
         currentPointIndex = (currentPointIndex + 1) % points.length
       }
       
+      await performClick(targetX, targetY, button)
       console.log(`点击位置: (${targetX}, ${targetY})，按钮: ${button}`)
       
       count++
@@ -105,8 +128,31 @@ ipcMain.on('mouse-click', (event, data) => {
 
 // 处理坐标拾取事件
 ipcMain.on('get-mouse-position', (event) => {
-  // 使用Electron的屏幕API获取鼠标位置
-  const { screen } = require('electron')
-  const mousePos = screen.getCursorScreenPoint()
-  event.reply('mouse-position', mousePos)
+  const pythonScriptPath = path.join(__dirname, 'src', 'electron_mouse_controller.py')
+  const pythonProcess = spawn('python3', [pythonScriptPath, 'get_position'])
+  
+  let output = ''
+  
+  pythonProcess.stdout.on('data', (data) => {
+    output += data.toString()
+  })
+  
+  pythonProcess.on('close', (code) => {
+    if (code === 0) {
+      try {
+        const pos = JSON.parse(output)
+        event.reply('mouse-position', pos)
+      } catch (error) {
+        // 如果解析失败，使用 Electron 的默认 API
+        const { screen } = require('electron')
+        const mousePos = screen.getCursorScreenPoint()
+        event.reply('mouse-position', mousePos)
+      }
+    } else {
+      // 如果 Python 脚本失败，使用 Electron 的默认 API
+      const { screen } = require('electron')
+      const mousePos = screen.getCursorScreenPoint()
+      event.reply('mouse-position', mousePos)
+    }
+  })
 })
