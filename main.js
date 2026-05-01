@@ -61,6 +61,7 @@ app.on('window-all-closed', () => {
 
 function runAppleScript(script) {
   return new Promise((resolve, reject) => {
+    console.log(`[AppleScript] Executing: ${script}`)
     const process = spawn('osascript', ['-e', script])
     let stdout = ''
     let stderr = ''
@@ -75,13 +76,16 @@ function runAppleScript(script) {
 
     process.on('close', (code) => {
       if (code === 0) {
+        console.log(`[AppleScript] Success: ${stdout}`)
         resolve(stdout.trim())
       } else {
+        console.error(`[AppleScript] Error (${code}): ${stderr}`)
         reject(new Error(stderr || `AppleScript exited with code ${code}`))
       }
     })
 
     process.on('error', (err) => {
+      console.error(`[AppleScript] Spawn error:`, err)
       reject(err)
     })
   })
@@ -90,53 +94,35 @@ function runAppleScript(script) {
 
 async function moveMouse(x, y) {
   try {
-    // 使用 AppleScript 移动鼠标
-    const script = `
-    tell application "System Events"
-      tell application process "SystemUIServer"
-        set position of mouse to {${x}, ${y}}
-      end tell
-    end tell
-    `
+    // 简化：直接使用 set position of mouse
+    const script = `tell application "System Events" to set position of mouse to {${x}, ${y}}`
     await runAppleScript(script)
   } catch (e) {
-    console.log('AppleScript move failed, fallback to logging')
+    console.error('moveMouse failed:', e.message)
   }
 }
 
 
 async function leftClick(x, y) {
   try {
-    // 先移动到目标位置
-    await moveMouse(x, y)
-    
-    // 使用 AppleScript 执行左键点击
-    const script = `
-    tell application "System Events"
-      click at {${x}, ${y}}
-    end tell
-    `
+    // 最简单可靠的方式：直接 click at
+    const script = `tell application "System Events" to click at {${x}, ${y}}`
+    console.log(`[AppleScript] Left click at (${x}, ${y})`)
     await runAppleScript(script)
   } catch (e) {
-    console.log('Click failed, logging instead', e)
+    console.error('leftClick failed:', e.message)
   }
 }
 
 
 async function rightClick(x, y) {
   try {
-    await moveMouse(x, y)
-    
-    const script = `
-    tell application "System Events"
-      key down control
-      click at {${x}, ${y}}
-      key up control
-    end tell
-    `
+    // 右键点击：control + click
+    const script = `tell application "System Events" to key down control \nclick at {${x}, ${y}}\nkey up control`
+    console.log(`[AppleScript] Right click at (${x}, ${y})`)
     await runAppleScript(script)
   } catch (e) {
-    console.log('Right click failed, logging instead', e)
+    console.error('rightClick failed:', e.message)
   }
 }
 
