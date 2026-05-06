@@ -56,82 +56,43 @@ app.on('window-all-closed', () => {
 })
 
 
-// ========== 鼠标控制功能（纯 Node.js + AppleScript） ==========
+// ========== 鼠标控制功能（Python pynput） ==========
 
+const pythonScript = path.join(__dirname, 'mouse_control.py')
 
-function runAppleScript(script) {
+function runPython(args) {
   return new Promise((resolve, reject) => {
-    console.log(`[AppleScript] Executing: ${script}`)
-    const process = spawn('osascript', ['-e', script])
+    const proc = spawn('python3', [pythonScript, ...args])
     let stdout = ''
     let stderr = ''
 
-    process.stdout.on('data', (data) => {
+    proc.stdout.on('data', (data) => {
       stdout += data.toString()
     })
 
-    process.stderr.on('data', (data) => {
+    proc.stderr.on('data', (data) => {
       stderr += data.toString()
     })
 
-    process.on('close', (code) => {
+    proc.on('close', (code) => {
       if (code === 0) {
-        console.log(`[AppleScript] Success: ${stdout}`)
         resolve(stdout.trim())
       } else {
-        console.error(`[AppleScript] Error (${code}): ${stderr}`)
-        reject(new Error(stderr || `AppleScript exited with code ${code}`))
+        reject(new Error(stderr || `Python exited with code ${code}`))
       }
     })
 
-    process.on('error', (err) => {
-      console.error(`[AppleScript] Spawn error:`, err)
+    proc.on('error', (err) => {
       reject(err)
     })
   })
 }
 
-
-async function moveMouse(x, y) {
-  try {
-    // 简化：直接使用 set position of mouse
-    const script = `tell application "System Events" to set position of mouse to {${x}, ${y}}`
-    await runAppleScript(script)
-  } catch (e) {
-    console.error('moveMouse failed:', e.message)
-  }
-}
-
-
-async function leftClick(x, y) {
-  try {
-    // 最简单可靠的方式：直接 click at
-    const script = `tell application "System Events" to click at {${x}, ${y}}`
-    console.log(`[AppleScript] Left click at (${x}, ${y})`)
-    await runAppleScript(script)
-  } catch (e) {
-    console.error('leftClick failed:', e.message)
-  }
-}
-
-
-async function rightClick(x, y) {
-  try {
-    // 右键点击：control + click
-    const script = `tell application "System Events" to key down control \nclick at {${x}, ${y}}\nkey up control`
-    console.log(`[AppleScript] Right click at (${x}, ${y})`)
-    await runAppleScript(script)
-  } catch (e) {
-    console.error('rightClick failed:', e.message)
-  }
-}
-
-
 async function performClick(x, y, button) {
-  if (button === 'left') {
-    await leftClick(x, y)
-  } else if (button === 'right') {
-    await rightClick(x, y)
+  try {
+    await runPython(['click', x.toString(), y.toString(), button])
+  } catch (e) {
+    console.error('Click failed:', e.message)
   }
 }
 
