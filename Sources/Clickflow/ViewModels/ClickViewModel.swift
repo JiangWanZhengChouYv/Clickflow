@@ -15,8 +15,10 @@ class ClickViewModel: ObservableObject {
     
     @Published var tempX: Double = 0
     @Published var tempY: Double = 0
-    
+    @Published var isPicking: Bool = false
+
     private let mouseService = MouseControlService.shared
+    private let crosshairService = CrosshairOverlayService.shared
     private var clickTask: Task<Void, Never>?
     private var currentClickIndex: Int = 0
     
@@ -95,9 +97,18 @@ class ClickViewModel: ObservableObject {
     }
     
     func pickCoordinates() {
-        let position = mouseService.getCurrentPosition()
-        tempX = position.x
-        tempY = position.y
+        guard !isPicking else { return }
+        isPicking = true
+
+        crosshairService.showCrosshair { [weak self] point in
+            DispatchQueue.main.async {
+                self?.isPicking = false
+                if let point = point {
+                    self?.tempX = Double(point.x)
+                    self?.tempY = Double(point.y)
+                }
+            }
+        }
     }
     
     private func runClickLoop() async {

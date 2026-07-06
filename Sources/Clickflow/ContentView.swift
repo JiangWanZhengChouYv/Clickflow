@@ -32,9 +32,10 @@ struct ContentView: View {
                             .frame(width: 120)
                     }
                     
-                    Button("拾取坐标") {
+                    Button(viewModel.isPicking ? "正在拾取..." : "拾取坐标") {
                         viewModel.pickCoordinates()
                     }
+                    .disabled(viewModel.isPicking)
                 }
                 .padding(.vertical, 4)
                 
