@@ -53,3 +53,13 @@ assets/*.iconset/
 *.swp
 *.swo
 *~
+
+# Swift
+.build/
+*.xcodeproj
+xcuserdata/
+
+# Project specific
+任务板.md
+AGENTS.md
+临时/

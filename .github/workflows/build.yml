@@ -1,34 +1,67 @@
-name: Build and Package DMG
+name: Build Clickflow
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ main ]
 
 jobs:
   build:
-    runs-on: macos-latest
-    
+    runs-on: macos-14
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-        cache: 'npm'
-    
-    - name: Install dependencies
-      run: |
-        npm install
-    
-    - name: Build app and DMG
-      run: npm run build -- --publish=never
-    
-    - name: Upload DMG artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: Clickflow-1.0.0--dmg
-        path: dist/*.dmg
-        retention-days: 30
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Build Swift project
+        run: swift build -c release
+
+      - name: Create .app bundle
+        run: |
+          APP_NAME="Clickflow"
+          APP_DIR="dist/${APP_NAME}.app"
+          
+          mkdir -p "${APP_DIR}/Contents/MacOS"
+          mkdir -p "${APP_DIR}/Contents/Resources"
+          
+          cp .build/release/${APP_NAME} "${APP_DIR}/Contents/MacOS/"
+          
+          cp Resources/Info.plist "${APP_DIR}/Contents/"
+          
+          /usr/libexec/PlistBuddy -c "Set :CFBundleExecutable ${APP_NAME}" "${APP_DIR}/Contents/Info.plist"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleName ${APP_NAME}" "${APP_DIR}/Contents/Info.plist"
+          
+          echo "✅ .app bundle created at ${APP_DIR}"
+
+      - name: Create DMG installer
+        run: |
+          APP_NAME="Clickflow"
+          DMG_NAME="${APP_NAME}.dmg"
+          APP_DIR="dist/${APP_NAME}.app"
+          DMG_PATH="dist/${DMG_NAME}"
+          
+          hdiutil create \
+            -volname "${APP_NAME}" \
+            -srcfolder "${APP_DIR}" \
+            -ov \
+            -format UDZO \
+            "${DMG_PATH}"
+          
+          echo "✅ DMG created at ${DMG_PATH}"
+
+      - name: Upload .app artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Clickflow.app
+          path: dist/Clickflow.app
+
+      - name: Upload DMG artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Clickflow.dmg
+          path: dist/Clickflow.dmg
